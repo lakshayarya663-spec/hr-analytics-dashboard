@@ -1,0 +1,140 @@
+# HR Analytics Dashboard
+**Python · SQL · Tableau**
+
+An end-to-end HR analytics project analyzing employee attrition, salary distribution, workforce diversity, and department performance — built from a synthetic 1,500-employee dataset.
+
+---
+
+## Project Structure
+
+```
+hr_project/
+├── data/
+│   └── hr_employee_data.csv          # Raw synthetic HR dataset (1,500 rows, 26 cols)
+├── scripts/
+│   ├── generate_data.py              # Generates the synthetic dataset
+│   └── hr_analysis.py                # Preprocessing, feature engineering, analysis
+├── outputs/
+│   ├── hr_data_clean.csv             # Cleaned + feature-engineered dataset (Tableau-ready)
+│   ├── hr_analytics.db               # SQLite database loaded with employee data
+│   ├── attrition_by_department.csv   # Summary tables for reporting
+│   ├── attrition_by_tenure.csv
+│   ├── attrition_by_jobrole.csv
+│   ├── salary_by_department.csv
+│   ├── gender_by_department.csv
+│   └── department_performance.csv
+├── sql/
+│   ├── 01_schema_and_load.sql        # Table schema + load instructions
+│   └── 02_turnover_reports.sql       # 10 turnover / workforce optimization queries
+├── dashboard/
+│   ├── index.html                    # Interactive dashboard (filters + KPI cards + charts)
+│   └── hr_data.json                  # Data feeding the dashboard
+└── README.md
+```
+
+---
+
+## 1. Data Generation & Preprocessing (Python)
+
+`scripts/generate_data.py` creates a realistic synthetic HR dataset (1,500 employees across
+6 departments, 20 job roles) with department- and tenure-correlated salaries, and an
+attrition outcome driven by realistic risk factors (overtime, satisfaction, tenure, pay,
+commute distance, age, marital status) — so the patterns you'll find in the analysis are
+directionally realistic, not random noise.
+
+`scripts/hr_analysis.py` then:
+- **Preprocesses** the data: imputes missing values (median by department), fixes dtypes,
+  winsorizes salary outliers at the 1st/99th percentile, drops duplicates.
+- **Engineers features** with Pandas/NumPy: tenure buckets, age groups, salary quartile bands,
+  a transparent composite **Attrition Risk Score** (0–100, built from overtime, satisfaction,
+  tenure, pay and commute) with Low/Medium/High risk tiers, and tenure-in-months.
+- Runs the four core analyses: **attrition patterns**, **salary distribution**,
+  **workforce diversity**, and **department-wise performance**.
+
+Run it:
+```bash
+python3 scripts/generate_data.py
+python3 scripts/hr_analysis.py
+```
+
+### Key findings from this run
+- Overall attrition rate: **20.8%**
+- Highest attrition: **Finance (28.3%)**; lowest: **R&D (16.5%)**
+- Employees working overtime attrite at **32.0%** vs **16.1%** for those who don't
+- Employees in their first year have a **31.7%** attrition rate vs **12.6%** for 10+ year tenure
+- "High Risk" tier (per the composite score) attrites at **42.9%** vs **10.5%** for "Low Risk"
+- Gender pay gap (mean monthly income): **~0.3%**, i.e. effectively at parity in this dataset
+
+---
+
+## 2. SQL Reports
+
+`sql/01_schema_and_load.sql` defines the `employees` table schema and load instructions
+for both SQLite and PostgreSQL.
+
+`sql/02_turnover_reports.sql` contains 10 production-style queries, tested against a live
+SQLite database (`outputs/hr_analytics.db`), covering:
+1. Overall turnover rate
+2. Turnover by department
+3. Turnover by job role (top attrition-risk roles)
+4. Turnover by tenure bucket
+5. Overtime vs. attrition
+6. Salary quartile vs. attrition (window function / `NTILE`)
+7. Workforce optimization summary by department (headcount, performance, pay, attrition, overtime load)
+8. High-risk active-employee watchlist (for retention outreach)
+9. Hiring vs. attrition trend by year
+10. Gender pay gap by department
+
+To rebuild the database yourself:
+```bash
+sqlite3 outputs/hr_analytics.db
+.mode csv
+.import --skip 1 data/hr_employee_data.csv employees
+.read sql/02_turnover_reports.sql
+```
+
+---
+
+## 3. Interactive Dashboard
+
+`dashboard/index.html` is a **self-contained interactive dashboard** — open it directly in
+any browser, no server required. It mirrors what the project would deliver as a Tableau
+workbook: KPI cards, cross-filters, and drill-down visuals, built with Chart.js and the
+cleaned dataset embedded as JSON.
+
+**Features:**
+- **Filters**: Department, Gender, Attrition Status, Risk Tier, Overtime — all cross-filter
+  every chart and KPI card live, the way Tableau quick filters would.
+- **KPI cards**: Headcount, Attrition Rate, Avg. Tenure, Avg. Monthly Income, Active High-Risk headcount.
+- **Attrition Risk Matrix**: a department × tenure heatmap — the fastest way to see *where*
+  retention risk is concentrated.
+- Charts: attrition by department, attrition by tenure trend, salary distribution, gender mix,
+  risk tier breakdown, and a sortable department performance table.
+
+Just open `dashboard/index.html` in a browser.
+
+### Building this in actual Tableau
+Since Tableau workbooks (`.twbx`) are proprietary binary files that can't be generated by a
+script, use `outputs/hr_data_clean.csv` (already cleaned and feature-engineered) as your
+Tableau data source, then recreate the same views:
+
+| Sheet | Rows/Columns | Marks |
+|---|---|---|
+| Attrition by Department | Columns: `Department`, Rows: `AVG(AttritionFlag)` | Bar, color by attrition rate |
+| Attrition by Tenure | Columns: `TenureBucket`, Rows: `AVG(AttritionFlag)` | Line |
+| Risk Matrix | Rows: `Department`, Columns: `TenureBucket` | Heatmap, color = `AVG(AttritionFlag)`, label = `COUNT` |
+| Salary Distribution | Columns: `MonthlyIncome` (binned) | Histogram |
+| Gender Mix | Angle: `COUNT(EmployeeID)`, Color: `Gender` | Pie/Donut |
+| Department Performance | Rows: `Department` | Text table, calculated fields for each metric |
+
+Add `Department`, `Gender`, `Attrition`, `RiskTier`, `OverTime` as **Quick Filters**, and
+combine the sheets above into one **Dashboard** with the KPI values as separate
+**Text/BAN (Big Ass Number)** tiles at the top — this reproduces the HTML dashboard 1:1
+inside Tableau Desktop/Public.
+
+---
+
+## Tech Summary
+- **Python** (Pandas, NumPy) — data generation, cleaning, feature engineering, statistical analysis
+- **SQL** (SQLite, PostgreSQL-compatible) — turnover reporting, workforce optimization queries, window functions
+- **Tableau-equivalent dashboard** (HTML/JS/Chart.js) — interactive filters, KPI cards, cross-filtered visuals, ready to port into Tableau Desktop

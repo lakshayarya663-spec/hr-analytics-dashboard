@@ -1,0 +1,7 @@
+Department,Headcount,AvgPerformanceRating,AvgJobSatisfaction,AvgEnvSatisfaction,AvgWorkLifeBalance,AvgTenureYears,AttritionRatePct,AvgMonthlyIncome
+Finance,173,2.94,2.77,2.64,2.69,4.18,28.32,6989.26
+IT,158,2.95,3.01,2.74,2.77,4.28,22.78,7356.5
+Sales,472,3.04,2.85,2.77,2.75,4.23,22.03,6295.51
+Marketing,97,3.05,2.98,2.76,2.54,3.91,20.62,6089.1
+Human Resources,121,3.02,2.83,2.87,2.73,4.15,19.83,5707.72
+Research & Development,479,3.01,2.94,2.86,2.74,3.79,16.49,6751.94
