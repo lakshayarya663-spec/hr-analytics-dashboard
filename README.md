@@ -26,10 +26,9 @@ It helped me apply data analysis and visualization concepts to a practical busin
 
 ## Technologies Used
 
-- Python / [Your technology]
-- Pandas / [Your data processing tool]
-- [Your visualization tool]
-- [Database, if used]
+- Python
+- SQL
+- Tableau
 
 ## Project Workflow
 
